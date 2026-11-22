@@ -3,6 +3,7 @@
 ## Próxima versão
 
 - Atalhos, macros e combinações por camada enviados pelo MiniDeck agora levam o scan code físico da tecla. Aplicativos Chromium/Electron, como o Claude desktop, comparam `KeyboardEvent.code` e ignoravam atalhos como Ctrl+F12 enviados sem ele.
+- Visual renovado e autoexplicativo, sem mudança de funcionalidade: tema escuro único (`Tema.xaml`) com listas, campos e barras de rolagem escuras e barra de título escura; menu com descrição de cada página e destaque da página atual; guia 1-2-3 na tela principal; explicação abaixo de cada campo, caixa que descreve cada tipo de ação e dicas ao passar o mouse em botões e campos; páginas de Iluminação e Gravar no teclado em passos numerados com avisos destacados; “Como funciona” em cartões agrupados, com glossário; editor de sequência com instruções.
 
 ## 1.3.0
 
