@@ -1,0 +1,22 @@
+name: Sugerir recurso
+description: Proponha uma melhoria no MiniDeck.
+title: '[Recurso] '
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: O que você quer conseguir fazer?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Como gostaria que funcionasse?
+    validations:
+      required: true
+  - type: textarea
+    id: hardware
+    attributes:
+      label: Evidências de suporte do hardware, se aplicável
+      description: Para LED ou protocolo, indique o modelo e o que foi observado, sem publicar arquivos privados do fabricante.

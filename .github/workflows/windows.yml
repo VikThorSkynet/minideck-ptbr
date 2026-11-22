@@ -1,0 +1,77 @@
+name: Windows · compilar e testar
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: 'true'
+
+jobs:
+  build:
+    name: Compilação e testes de lógica
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Obter código
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Preparar .NET 8
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          dotnet-version: '8.0.x'
+      - name: Conferir versão da tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          [xml]$project = Get-Content MiniDeck/MiniDeck.csproj
+          if ($env:GITHUB_REF_NAME -ne ('v' + $project.Project.PropertyGroup.Version)) {
+            throw 'A tag precisa corresponder à versão do projeto.'
+          }
+      - name: Publicar aplicativo e gerar ZIP
+        shell: pwsh
+        run: .\compilar.ps1
+      - name: Executar testes sem hardware
+        shell: pwsh
+        run: .\testar.ps1 -ExecutablePath .\dist\win-x64\MiniDeck.exe
+      - name: Guardar distribuição e resultado dos testes
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: MiniDeck-Windows
+          path: |
+            dist/*.zip
+            dist/*.sha256
+            .artifacts/testes.json
+          include-hidden-files: true
+          if-no-files-found: error
+
+  release:
+    name: Publicar release
+    needs: build
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Baixar distribuição aprovada
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: MiniDeck-Windows
+          path: dist
+      - name: Criar ou atualizar release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" dist/*.zip dist/*.sha256 --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" dist/*.zip dist/*.sha256 --verify-tag --title "MiniDeck PT-BR $GITHUB_REF_NAME" --generate-notes
+          fi

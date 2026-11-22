@@ -1,0 +1,46 @@
+{
+  "Version": 1,
+  "KeyCount": 6,
+  "KnobCount": 1,
+  "BridgeEnabled": false,
+  "BridgePrepared": false,
+  "ActiveLayer": "principal-exemplo",
+  "SoundMasterVolume": 100,
+  "SoundMuted": false,
+  "Layers": [
+    {
+      "Id": "principal-exemplo",
+      "Name": "Principal",
+      "Color": "#68DFC3",
+      "Actions": {
+        "1": { "Name": "Microfone", "Kind": "micMute" },
+        "2": { "Name": "Reproduzir / pausar", "Kind": "media", "Value": "play" },
+        "6": { "Name": "Ir para Sons", "Kind": "layer", "Target": "sons-exemplo" },
+        "13": { "Name": "Volume −", "Kind": "outputDown" },
+        "14": { "Name": "Mutar saída", "Kind": "outputMute" },
+        "15": { "Name": "Volume +", "Kind": "outputUp" }
+      }
+    },
+    {
+      "Id": "sons-exemplo",
+      "Name": "Sons",
+      "Color": "#FFD166",
+      "Actions": {
+        "1": {
+          "Name": "Escolher meu MP3",
+          "Kind": "soundPlay",
+          "Value": "C:\\Sons\\aplausos.mp3",
+          "Target": "",
+          "SoundVolume": 50,
+          "SoundBehavior": "restart",
+          "SoundLoop": false
+        },
+        "5": { "Name": "Parar sons", "Kind": "soundStop" },
+        "6": { "Name": "Voltar", "Kind": "layer", "Target": "principal-exemplo" },
+        "13": { "Name": "Sons −", "Kind": "soundVolumeDown", "Step": 5 },
+        "14": { "Name": "Sons: mudo", "Kind": "soundMute" },
+        "15": { "Name": "Sons +", "Kind": "soundVolumeUp", "Step": 5 }
+      }
+    }
+  ]
+}

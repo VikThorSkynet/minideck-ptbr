@@ -1,0 +1,34 @@
+name: Problema de funcionamento
+description: Relate um erro com passos para reproduzir.
+title: '[Bug] '
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Versão do MiniDeck e do Windows
+      placeholder: MiniDeck 1.2.0, Windows 11 x64
+    validations:
+      required: true
+  - type: input
+    id: hardware
+    attributes:
+      label: Teclado e layout
+      placeholder: 6 teclas, 1 knob; VID/PID e firmware, se souber
+  - type: textarea
+    id: steps
+    attributes:
+      label: Passos para reproduzir
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Resultado esperado e resultado recebido
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidências opcionais
+      description: Revise imagens e logs; não envie perfis pessoais, tokens ou identificadores completos do dispositivo.
