@@ -30,7 +30,7 @@ O script não encerra nem substitui um MiniDeck em execução em outra pasta. N�
 .\testar.ps1 -ExecutablePath .\dist\win-x64\MiniDeck.exe -Audio
 ```
 
-Resultados e imagens ficam em `.artifacts`, fora do Git. Na versão 1.2, a referência local é 42 testes de lógica, 27 verificações de interface e 7 verificações de áudio.
+Resultados e imagens ficam em `.artifacts`, fora do Git. A versão 1.3 tem 54 testes de lógica e amplia a interface com os atalhos externos por camada. O teste opcional do hook valida instalação, alternância do estado e término da thread, com zero teclas reservadas e sem entrada simulada. A versão 1.2 também teve sete verificações de áudio.
 
 | Grupo | Verifica | Dependências externas |
 |---|---|---|
@@ -50,6 +50,7 @@ A CI executa apenas lógica. Os testes opcionais não comprovam áudio audível 
 | `--self-test arquivo.json` | Testes de lógica, resultado JSON e exit code 0/1. |
 | `--ui-smoke pasta` | Verificações de interface em perfil descartável e imagens PNG. |
 | `--sound-smoke pasta` | Testes de áudio real em silêncio e resultado JSON. |
+| `--hook-smoke arquivo.json` | Ciclo do hook nativo sem reservar teclas; não testa uma pressão física. |
 | `--diagnostico arquivo.json` | Enumeração de interfaces HID, dispositivos e sessões de áudio; somente leitura. |
 
 Modos de teste e diagnóstico rodam separados da instância normal. Diagnósticos podem conter caminhos e identificadores de dispositivos: revise antes de compartilhar.
@@ -64,7 +65,7 @@ Para uma versão nova:
 
 1. Atualize `<Version>` em `MiniDeck.csproj`, o changelog e a documentação afetada.
 2. Execute os testes necessários e faça commit.
-3. Publique a branch e uma tag correspondente, como `v1.2.1`.
+3. Publique a branch e uma tag correspondente à versão do projeto.
 4. Aguarde o workflow e confira os arquivos na release.
 
 ## Alterações no protocolo

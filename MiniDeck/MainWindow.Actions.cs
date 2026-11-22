@@ -14,7 +14,7 @@ public partial class MainWindow
     private void LoadEditor()
     {
         var slot=config.Slots().FirstOrDefault(s=>s.Id==selectedSlot)??config.Slots().First();selectedSlot=slot.Id;
-        EditorTitle.Text=slot.Name;EditorLayer.Text=engine.Current.Name+" · "+slot.Trigger;
+        EditorTitle.Text=slot.Name;EditorLayer.Text=engine.Current.Name+" · "+LayerHotkeys.Describe(config,engine.Current,slot.Id);
         Editor.Load(config,engine.Current.Actions.GetValueOrDefault(selectedSlot)??new DeckAction());
     }
     private DeckAction ReadEditor()
@@ -32,7 +32,11 @@ public partial class MainWindow
     {
         try {
             var action=ReadEditor();if(action.Kind=="holdLayer")throw new InvalidOperationException("Teste a camada enquanto segura usando a tecla física.");
-            SetStatus("Teste em 3 segundos. Coloque o aplicativo de destino em primeiro plano…");await Task.Delay(3000);await ExecuteAction(action,CancellationToken.None);
+            var shortcut=action.Kind=="none"&&config.LayerHotkeysEnabled?LayerHotkeys.Get(config,engine.Current,selectedSlot):null;
+            if(action.Kind=="none"&&config.LayerHotkeysEnabled&&shortcut==null)throw new InvalidOperationException("Escolha uma ação para o knob ou para uma camada sem atalho automático disponível.");
+            SetStatus("Teste em 3 segundos. Coloque o aplicativo de destino em primeiro plano…");await Task.Delay(3000);
+            if(shortcut!=null){const int testSlot=1000;externalKeys.Press(testSlot,shortcut);try{await Task.Delay(150);}finally{externalKeys.Release(testSlot);}SetStatus("Atalho enviado: "+shortcut.Label);}
+            else await ExecuteAction(action,CancellationToken.None);
         }catch(OperationCanceledException){SetStatus("Sequência interrompida.");}catch(Exception ex){SetStatus(ex.Message,true);}
     }
     private async void OnPhysicalKey(int vk,bool down)
@@ -46,6 +50,12 @@ public partial class MainWindow
             timer.Tick+=(_,_)=>{timer.Stop();if(slotButtons.TryGetValue(slot.Id,out var current))current.Background=Color(slot.Id==selectedSlot?"#243D46":"#1B293C");};timer.Start();
         }
         try {
+            if(!down)externalKeys.Release(slot.Id);
+            if(down&&config.LayerHotkeysEnabled&&(engine.Current.Actions.GetValueOrDefault(slot.Id)?.Kind??"none")=="none") {
+                var shortcut=LayerHotkeys.Get(config,engine.Current,slot.Id);
+                if(shortcut==null){SetStatus(slot.Id>12?"Knob sem ação: escolha uma função ou Atalho de teclado.":"Esta camada não tem atalho F automático disponível. Configure uma ação ou um atalho manual.");return;}
+                externalKeys.Press(slot.Id,shortcut);SetStatus(slot.Name+" → "+shortcut.Label+" · "+engine.Current.Name);return;
+            }
             var action=engine.Handle(slot.Id,down);
             if(action!=null){await ExecuteAction(action,CancellationToken.None);SetStatus(slot.Name+" · "+StatusText.Text);}
             else if(down){SetStatus(slot.Name+" · camada "+engine.Current.Name);SaveLocal();}
@@ -88,6 +98,18 @@ public partial class MainWindow
         SetStatus(message);
     }
     private void StopSequenceClick(object sender,RoutedEventArgs e)=>sequences.Cancel();
+    private void UpdateInputRouting()
+    {
+        bool active=config.LayerHotkeysEnabled&&config.BridgeEnabled&&config.BridgePrepared&&miniConnected&&!busy;
+        if(!active)externalKeys.ReleaseAll();
+        reservedKeys?.Configure(active,Math.Min(12,config.KeyCount+config.KnobCount*3));
+    }
+    private void LayerHotkeysChanged(object sender,RoutedEventArgs e)
+    {
+        if(!ready)return;externalKeys.ReleaseAll();engine.ReleaseAll();config.LayerHotkeysEnabled=LayerHotkeysBox.IsChecked==true;
+        UpdateInputRouting();RenderDeck();LoadEditor();RefreshBridge();SaveLocal();
+        SetStatus(config.LayerHotkeysEnabled?"Atalhos exclusivos ativados. Cadastre a combinação mostrada em cada camada no programa de destino.":"Modo compartilhado ativado: os F13–F24 originais voltam a passar.");
+    }
     private void RefreshSoundControls()
     {
         updatingSoundControls=true;

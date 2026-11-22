@@ -104,6 +104,7 @@ public static class InputSender
         return name switch { "CTRL" or "CONTROL"=>0x11,"SHIFT"=>0x10,"ALT"=>0x12,"WIN"=>0x5B,"RCTRL"=>0xA3,"RALT"=>0xA5,"RSHIFT"=>0xA1,"RWIN"=>0x5C,"ENTER"=>0x0D,"TAB"=>9,"ESC" or "ESCAPE"=>0x1B,"SPACE" or "ESPAÇO"=>0x20,"BACKSPACE"=>8,"DELETE" or "DEL"=>0x2E,"INSERT"=>0x2D,"HOME"=>0x24,"END"=>0x23,"PAGEUP"=>0x21,"PAGEDOWN"=>0x22,"LEFT"=>0x25,"UP"=>0x26,"RIGHT"=>0x27,"DOWN"=>0x28,_=>Enum.TryParse<System.Windows.Forms.Keys>(name,true,out var key)&&Enum.IsDefined(typeof(System.Windows.Forms.Keys),key)&&(int)key>0&&(int)key<256?(ushort)key:throw new FormatException("Tecla não reconhecida: "+name) };
     }
     private static Input K(ushort vk,bool up=false) => new(){Type=1,Data=new(){Key=new(){Vk=vk,Flags=(up?2u:0u)|(vk is >=0x21 and <=0x2E or 0x5B or 0x5C or 0xA3 or 0xA5?1u:0u)}}};
+    public static void KeyTransitions(IReadOnlyList<(ushort Key,bool Up)> keys){if(keys.Count>0)Send(keys.Select(k=>K(k.Key,k.Up)));}
     public static void Shortcut(string text) { var keys=text.Split('+',StringSplitOptions.TrimEntries|StringSplitOptions.RemoveEmptyEntries).Select(Vk).ToArray(); if(keys.Length==0) throw new FormatException("Informe um atalho, como Ctrl+Shift+M."); Send(keys.Select(v=>K(v)).Concat(keys.Reverse().Select(v=>K(v,true)))); }
     public static void Media(string type) { ushort vk=type switch {"play"=>0xB3,"next"=>0xB0,"previous"=>0xB1,"stop"=>0xB2,"mute"=>0xAD,"up"=>0xAF,"down"=>0xAE,_=>throw new FormatException("Ação de mídia inválida.")}; Send(new[]{K(vk),K(vk,true)}); }
     public static void Text(string text)

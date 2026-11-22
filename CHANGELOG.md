@@ -1,5 +1,17 @@
 # Histórico de versões
 
+## 1.3.0
+
+- Atalhos exclusivos por camada para teclas configuradas como Sem ação.
+- Sequência F13–F18, F19–F24 e depois combinações Ctrl/Alt/Shift, sem inventar teclas F25+.
+- Bloqueio dos gatilhos físicos F13–F24 usados pelo layout enquanto o modo está ativo; a reserva abrange todos os teclados.
+- Teclas com ações internas não enviam mais um F extra no modo exclusivo.
+- Pressão/liberação, contagem de modificadores e liberação ao pausar/desconectar/encerrar.
+- Bancos persistentes que não mudam ao excluir ou renomear outra camada.
+- Atalho externo visível no editor e compacto, preservando os nomes personalizados.
+- Limite explícito de 96 combinações automáticas e opção de retornar ao modo compartilhado.
+- Testes de isolamento, unicidade, persistência, liberação e ciclo do hook nativo.
+
 ## 1.2.0
 
 - Soundboard com MP3/WAV, escolha de saída e volume individual.

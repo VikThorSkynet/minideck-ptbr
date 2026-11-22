@@ -37,6 +37,7 @@
      </StackPanel></ScrollViewer>
      <Border Grid.Column="2" Background="#151F2E" CornerRadius="14" Padding="21" BorderBrush="#2A394E" BorderThickness="1"><ScrollViewer><StackPanel>
       <TextBlock Text="CONFIGURAR AÇÃO" Foreground="#68DFC3" FontSize="10" FontWeight="Bold"/><TextBlock x:Name="EditorTitle" Text="Tecla 1" FontSize="23" FontWeight="SemiBold" Margin="0,9,0,0"/><TextBlock x:Name="EditorLayer" Style="{StaticResource Caption}"/>
+      <CheckBox x:Name="LayerHotkeysBox" Content="Atalhos exclusivos por camada" Foreground="#68DFC3" Margin="0,0,0,8" Checked="LayerHotkeysChanged" Unchecked="LayerHotkeysChanged" ToolTip="Enquanto ativo, reserva os F13–F24 físicos de todos os teclados para o MiniDeck. Teclas sem ação enviam o atalho da camada atual. Desmarque para o comportamento compartilhado anterior."/>
       <local:ActionEditor x:Name="Editor"/>
       <Button Content="Salvar ação" Style="{StaticResource Primary}" Click="SaveActionClick" HorizontalContentAlignment="Center" Margin="0,4,0,8"/><Button Content="Testar ação em 3 segundos" Click="TestActionClick" HorizontalContentAlignment="Center" Margin="0,0,0,8"/><TextBlock Text="Salve antes de trocar de tecla. No teste, você tem 3 segundos para colocar o aplicativo de destino em primeiro plano." Style="{StaticResource Caption}" FontSize="11"/>
      </StackPanel></ScrollViewer></Border>

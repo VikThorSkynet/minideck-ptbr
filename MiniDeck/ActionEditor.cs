@@ -74,6 +74,7 @@ public sealed class ActionEditor : UserControl
         var choices=k=="media"?Catalog.Media:k=="mouse"?Catalog.Mouse:led?new[]{new Choice("0","Modo 0"),new Choice("1","Modo 1"),new Choice("2","Modo 2")}:Array.Empty<Choice>();
         choice.ItemsSource=choices;choice.SelectedItem=choices.FirstOrDefault(c=>c.Id==action.Value)??choices.FirstOrDefault();
         hint.Text=k switch {
+            "none"=>"Com Atalhos exclusivos por camada, uma tecla sem ação envia a combinação mostrada acima para você cadastrar no OBS ou em outro programa. Knobs sem ação ficam sem comando. As outras ações são executadas somente pelo MiniDeck.",
             "soundPlay"=>"O som toca pelo MiniDeck, com volume próprio. No OBS, capture a saída escolhida ou o áudio do MiniDeck. Para Voicemeeter ou cabo virtual, selecione essa saída aqui. O arquivo permanece na pasta original.",
             "soundStop"=>"Para imediatamente todos os sons do MiniDeck, inclusive os que estão repetindo.",
             "soundVolumeUp" or "soundVolumeDown" or "soundVolumeSet" or "soundMute"=>"Controla somente os sons do MiniDeck, inclusive os que já estão tocando. Você pode colocar esse controle no knob.",

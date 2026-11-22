@@ -66,11 +66,14 @@ public partial class CompactWindow : Window
         var a=layer.Actions.GetValueOrDefault(slot.Id)??new DeckAction();
         var content=new StackPanel();
         string caption=knob?((slot.Id-13)%3) switch{0=>"↶ Esquerda",1=>"Clique",_=>"↷ Direita"}:"Tecla "+slot.Id;
+        var external=a.Kind=="none"&&getConfig().LayerHotkeysEnabled&&slot.Id<=12?LayerHotkeys.Get(getConfig(),layer,slot.Id):null;
+        if(external!=null)caption=external.Label;
         content.Children.Add(new TextBlock{Text=caption,Tag=caption,FontSize=9,Foreground=Ui.Brush("#9CB0C5"),HorizontalAlignment=HorizontalAlignment.Center});
-        content.Children.Add(new TextBlock{Text=a.Name,FontSize=12,FontWeight=FontWeights.SemiBold,TextAlignment=TextAlignment.Center,TextWrapping=TextWrapping.Wrap,TextTrimming=TextTrimming.CharacterEllipsis,MaxHeight=34,Margin=new Thickness(0,3,0,0)});
-        var b=new Button{Content=content,ToolTip=slot.Name+" · "+a.Name+"\n"+ActionRules.Describe(a),Name="CompactKey"+slot.Id};
-        AutomationProperties.SetName(b,slot.Name+": "+a.Name);AutomationProperties.SetAutomationId(b,b.Name);
-        b.Click+=(_,_)=>SetActivity(slot.Name+" · "+a.Name+" · "+ActionRules.Describe(a));buttons[slot.Id]=b;return b;
+        string actionName=external!=null&&a.Name=="Sem ação"?"Atalho externo":a.Name;
+        content.Children.Add(new TextBlock{Text=actionName,FontSize=12,FontWeight=FontWeights.SemiBold,TextAlignment=TextAlignment.Center,TextWrapping=TextWrapping.Wrap,TextTrimming=TextTrimming.CharacterEllipsis,MaxHeight=34,Margin=new Thickness(0,3,0,0)});
+        var b=new Button{Content=content,ToolTip=slot.Name+" · "+a.Name+"\n"+(a.Kind=="none"?LayerHotkeys.Describe(getConfig(),layer,slot.Id):ActionRules.Describe(a)),Name="CompactKey"+slot.Id};
+        AutomationProperties.SetName(b,slot.Name+": "+actionName);AutomationProperties.SetAutomationId(b,b.Name);
+        b.Click+=(_,_)=>SetActivity(slot.Name+" · "+a.Name+" · "+(a.Kind=="none"?LayerHotkeys.Describe(getConfig(),getLayer(),slot.Id):ActionRules.Describe(a)));buttons[slot.Id]=b;return b;
     }
     public void SetRuntimeStatus(string connection,bool enabled,bool prepared)
     {

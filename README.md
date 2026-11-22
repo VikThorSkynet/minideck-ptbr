@@ -31,6 +31,7 @@ Requisitos: **Windows 10/11 x64**, teclado compatível e, para sons, uma saída 
 | Recurso | Como funciona |
 |---|---|
 | Camadas de funções | Até 100 camadas; próxima, anterior, destino específico e mudança enquanto segura uma tecla. |
+| Atalhos externos por camada | Teclas em Sem ação enviam combinações distintas para cadastrar diretamente no OBS ou em outro programa; o gatilho físico original é bloqueado. |
 | Painel compacto | Mostra a camada atual e os nomes das teclas/knob; pode ser movido, redimensionado e fixado sobre outras janelas. |
 | Identificação da tecla | Cartão amarelo enquanto segura e por 2 segundos após soltar; bolinha, borda e indicador da última entrada permanecem visíveis. |
 | Soundboard | MP3/WAV, arquivo por botão, volume individual, saída de áudio, reinício, tocar/parar, sobreposição e repetição. |
@@ -72,7 +73,22 @@ Clique em **Modo compacto**, arraste o cabeçalho para a outra tela e ative **Fi
 
 Os modos 0, 1 e 2 são os únicos encontrados no configurador analisado. **Não há controle comprovado de RGB, brilho, velocidade ou LED individual**, nem leitura de volta da configuração. Os efeitos físicos precisam ser conferidos em cada unidade. **Cor do painel** muda apenas a identificação da camada na tela; trocar uma camada de software não altera automaticamente o LED.
 
-O MiniDeck recebe eventos por **Raw Input**, filtrados pelo dispositivo, e prepara F13–F24 como gatilhos. Outros aplicativos com atalhos nessas teclas também podem reagir. Não instala driver, filtro global de teclado, serviço ou firmware.
+O teclado continua usando F13–F24 como gatilhos internos. O modo **Atalhos exclusivos por camada**, ativado por padrão, reserva os F13–F24 físicos usados pelo layout e envia somente o atalho da camada ou a ação configurada. Esse bloqueio usa um hook do Windows e abrange essa faixa em **todos os teclados** enquanto as camadas estão ativas e uma única unidade está conectada. Ao desmarcar o modo, a entrada volta a ser filtrada por dispositivo via Raw Input e os gatilhos originais podem chegar aos outros programas. Não instala driver, serviço ou firmware.
+
+## Configurar atalhos diretamente em outro programa
+
+Deixe **Atalhos exclusivos por camada** marcado, escolha **Sem ação** na tecla e salve. Cadastre no programa de destino a combinação mostrada no editor/compacto. Para seis teclas:
+
+| Banco de camada | Faixa reservada às teclas |
+|---|---|
+| 1 | F13–F18 |
+| 2 | F19–F24 |
+| 3 | Ctrl+F13–F18 |
+| 4 | Ctrl+F19–F24 |
+
+Depois vêm Alt, Shift e combinações desses modificadores. O [Windows define teclas F até a F24](https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes), portanto não existe F25 para continuar a numeração. Há **96 combinações automáticas**, equivalentes a 16 bancos de seis teclas. O limite de 100 camadas de ações do MiniDeck continua; bancos além da faixa automática exigem uma ação ou um atalho manual. Knobs em Sem ação não recebem atalho automático.
+
+**Ao atualizar da versão 1.2, recadastre os atalhos nas outras aplicações.** Por exemplo, a tecla 5 da terceira camada passa de F17 para Ctrl+F17. Uma tecla com ação, como trocar camada ou tocar som, não envia um F adicional. Pressão/liberação são preservadas para atalhos enquanto segura. Os bancos não mudam ao renomear ou excluir outra camada. Veja o [guia de atalhos por camada](docs/ATALHOS-POR-CAMADA.md).
 
 ## Compilar e testar
 
@@ -87,7 +103,7 @@ cd minideck-ptbr
 
 `compilar.ps1` gera a distribuição autocontida e o ZIP em `dist`. Para uma publicação que usa o runtime já instalado, use `-FrameworkDependent`.
 
-A versão 1.2 foi verificada localmente com **42 testes de lógica, 27 verificações de interface e 7 verificações de áudio**. Os testes de interface usam um perfil descartável; a verificação WASAPI usa sinal próprio com volume das amostras em zero. A CI executa os testes de lógica, sem exigir teclado ou dispositivo de áudio.
+A versão 1.3 inclui **54 testes de lógica**, verificações de interface e teste opcional de instalação/encerramento do hook nativo. Os testes de interface usam um perfil descartável. A versão 1.2 também teve sete verificações de áudio com sinal próprio e volume de amostras em zero. A CI executa lógica, sem exigir teclado ou dispositivo de áudio. Os testes automatizados não confirmam a integração física com atalhos globais de outros programas; confira no aplicativo de destino.
 
 Leia [desenvolvimento e testes](docs/DESENVOLVIMENTO.md) para executar as verificações opcionais.
 
@@ -95,6 +111,7 @@ Leia [desenvolvimento e testes](docs/DESENVOLVIMENTO.md) para executar as verifi
 
 - [Guia fácil de uso](docs/GUIA-DE-USO.md)
 - [Todas as ações e seus parâmetros](docs/ACOES.md)
+- [Atalhos externos exclusivos por camada](docs/ATALHOS-POR-CAMADA.md)
 - [Sons, volumes, OBS e Voicemeeter](docs/SONS-E-GRAVACAO.md)
 - [Compatibilidade e limitações](docs/COMPATIBILIDADE.md)
 - [Arquitetura do programa](docs/ARQUITETURA.md)

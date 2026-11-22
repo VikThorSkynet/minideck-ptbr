@@ -30,6 +30,7 @@ public sealed class DeckLayer
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
     public string Name { get; set; } = "Nova camada";
     public string Color { get; set; } = "#68DFC3";
+    public int HotkeyBank {get;set;} = -1;
     public Dictionary<int, DeckAction> Actions { get; set; } = new();
 }
 public sealed class CompactSettings
@@ -48,6 +49,8 @@ public sealed class DeckConfig
     public int KnobCount { get; set; } = 1;
     public bool BridgeEnabled { get; set; }
     public bool BridgePrepared { get; set; }
+    public bool LayerHotkeysEnabled {get;set;} = true;
+    public int NextHotkeyBank {get;set;}
     public string ActiveLayer { get; set; } = "";
     public List<DeckLayer> Layers { get; set; } = new();
     public CompactSettings Compact { get; set; } = new();
@@ -106,6 +109,7 @@ public sealed class DeckConfig
         if(Compact.Left is double x&&!double.IsFinite(x))Compact.Left=null;
         if(Compact.Top is double y&&!double.IsFinite(y))Compact.Top=null;
         if(!Layers.Any(l=>l.Id==ActiveLayer)) ActiveLayer=Layers[0].Id;
+        LayerHotkeys.EnsureBanks(this);
     }
     public static bool ValidColor(string color) => color!=null&&System.Text.RegularExpressions.Regex.IsMatch(color,"^#[0-9a-fA-F]{6}$");
     public IEnumerable<ControlSlot> Slots()

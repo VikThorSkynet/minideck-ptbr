@@ -37,7 +37,10 @@ Não há atualização de firmware, bootloader, driver, serviço, inicializaçã
 
 ## Limites práticos
 
-- Raw Input filtra o dispositivo, mas não suprime os gatilhos F13–F24 para outros aplicativos.
+- O modo exclusivo reserva os F13–F24 físicos usados pelo layout em todos os teclados. Hooks do Windows não identificam a origem física; não há filtragem por dispositivo nesse caminho. Teclas normais fora dessa faixa passam.
+- O modo compartilhado usa Raw Input filtrado por dispositivo e não suprime os gatilhos originais.
+- O Windows só define F até F24. A geração automática oferece 96 combinações com Ctrl/Alt/Shift: 16 bancos com seis teclas ou 8 bancos com doze. Camadas de ações continuam com limite de 100. Knobs em Sem ação não recebem combinação automática.
+- Aplicativos que instalam outros hooks ou capturam entrada por caminhos próprios precisam de teste no destino. A instalação do hook não comprova que todo atalho global de qualquer aplicativo será isolado.
 - Use uma única unidade desse modelo conectada ao configurar.
 - Atalhos são enviados ao aplicativo em primeiro plano; o Windows pode bloquear envio a processos com privilégio maior.
 - Controle de microfone altera o nível de entrada do Windows, não filtros internos de programas.

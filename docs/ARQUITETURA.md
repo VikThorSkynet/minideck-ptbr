@@ -4,7 +4,10 @@ Aplicativo Windows em C#/.NET 8, interface WPF e ícone de bandeja via Windows F
 
 ```mermaid
 flowchart LR
-    K[Mini teclado USB] -->|F13–F24 / Raw Input| I[RawKeyboard]
+    K[Mini teclado USB] -->|Modo compartilhado| I[RawKeyboard]
+    K -->|Modo exclusivo| Hk[ReservedFunctionHook]
+    Hk --> L[LayerEngine]
+    Hk --> C[Painel compacto]
     I --> L[LayerEngine]
     I --> C[Painel compacto]
     L --> E[Executor de ações]
@@ -24,6 +27,8 @@ flowchart LR
 | `Program.cs` | Entrada STA, instância única, eventos locais entre instâncias e modos de teste/diagnóstico. |
 | `Models.cs` | Perfil, ações, camadas, layout, validação estrutural, catálogo e persistência. |
 | `Input.cs` | Raw Input, filtro VID/PID, supressão de repetição, camadas e envio de entrada pelo Windows. |
+| `ReservedFunctionHook.cs` | Hook em thread própria; reserva os F13–F24 físicos usados pelo layout, sem identificação do teclado. |
+| `LayerHotkeys.cs` | Bancos externos persistentes, 96 combinações, política de reserva e pressão/liberação com referência de modificadores. |
 | `Hardware.cs` | Quadros USB, descoberta da interface, transporte HID e preparação de F13–F24. |
 | `NativeBindings.cs` | Conversão de atalhos, mídia e mouse para comandos nativos. |
 | `MainWindow.xaml(.cs)` | Editor, navegação, perfis, iluminação, gravação e bandeja. |
@@ -39,9 +44,9 @@ flowchart LR
 
 ## Entrada e camadas
 
-A preparação grava F13–F24 nas entradas do aparelho. `RawKeyboard` registra Raw Input, verifica o nome do dispositivo e só despacha o VID/PID esperado. O painel recebe a pressão antes da resolução da ação, preservando o destaque durante uma troca de camada.
+A preparação grava F13–F24 nas entradas do aparelho. No modo compartilhado, `RawKeyboard` verifica o nome do dispositivo e só despacha o VID/PID esperado, permitindo a propagação original. No modo exclusivo, `ReservedFunctionHook` consome as teclas físicas reservadas e agenda o processamento na interface, deixando eventos injetados passar. Esse hook não tem identidade do dispositivo e reserva a faixa em todos os teclados.
 
-`LayerEngine` mantém a camada permanente e uma pilha de camadas enquanto segura. A liberação remove a entrada correspondente, mesmo quando a ação no destino tem outro significado. As ações comuns são entregues ao executor. Os gatilhos não são suprimidos dos demais aplicativos.
+`LayerEngine` mantém a camada permanente e uma pilha de camadas enquanto segura. A liberação remove a entrada correspondente, mesmo quando a ação no destino tem outro significado. No modo exclusivo, uma tecla Sem ação usa `LayerHotkeys`/`HeldShortcutOutput` para enviar a combinação do banco atual. A liberação pertence à camada da pressão original e usa contagem de referências para modificadores compartilhados. As ações comuns são entregues ao executor, sem propagar o F original.
 
 ## Áudio
 

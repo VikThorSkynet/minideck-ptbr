@@ -23,6 +23,9 @@ public partial class MainWindow : Window
     private readonly AudioService audio=new();
     private readonly LayerEngine engine;
     private RawKeyboard? input;
+    private ReservedFunctionHook? reservedKeys;
+    private readonly HeldShortcutOutput externalKeys=new(InputSender.KeyTransitions);
+    private bool miniConnected;
     private bool ready,busy,exitRequested;
     private CompactWindow? compact;
     private readonly SequenceRunner sequences=new();
@@ -46,10 +49,14 @@ public partial class MainWindow : Window
         KeyCountBox.ItemsSource=Enumerable.Range(1,12).ToArray(); KeyCountBox.SelectedItem=config.KeyCount;
         KnobCountBox.ItemsSource=new[]{0,1,2}; KnobCountBox.SelectedItem=config.KnobCount;
         engine.Changed+=()=>{ RenderDeck(); RefreshBridge(); if(ready)LoadEditor(); compact?.Refresh(); };
+        LayerHotkeysBox.IsChecked=config.LayerHotkeysEnabled;
         BuildHelp(); ready=true; RenderDeck(); LoadEditor(); RefreshHardwareSlots(); RefreshBridge();RefreshSoundControls();
         SourceInitialized+=(_,_)=> {
-            try { input=new RawKeyboard(new WindowInteropHelper(this).Handle); input.Key+=OnPhysicalKey; }
-            catch(Exception e) { SetStatus("Não foi possível receber as teclas: "+e.Message,true); }
+            try {
+                input=new RawKeyboard(new WindowInteropHelper(this).Handle);input.Key+=(vk,down)=>{if(!config.LayerHotkeysEnabled)OnPhysicalKey(vk,down);};
+                reservedKeys=new ReservedFunctionHook();reservedKeys.Key+=(vk,down)=>Dispatcher.BeginInvoke(new Action(()=>OnPhysicalKey(vk,down)));
+                UpdateInputRouting();
+            }catch(Exception e){config.BridgeEnabled=false;RefreshBridge();SetStatus("Ações pausadas: não foi possível receber/isolar as teclas. "+e.Message,true);}
         };
         Loaded+=(_,_)=>{ RefreshConnection(); if(store.LoadWarning!=null) { config.BridgeEnabled=false; SetStatus(store.LoadWarning,true); } };
         connectionTimer.Tick+=(_,_)=>RefreshConnection(); connectionTimer.Start();
@@ -58,7 +65,7 @@ public partial class MainWindow : Window
             if(busy) { e.Cancel=true; SetStatus("Aguarde o envio ao teclado terminar."); return; }
             SaveLocal();
             if(!exitRequested && config.BridgeEnabled) { e.Cancel=true; Hide(); tray?.ShowBalloonTip(2500,"MiniDeck continua ativo","Use o ícone da bandeja para abrir ou encerrar.",System.Windows.Forms.ToolTipIcon.Info); }
-            else { sequences.Dispose();sounds.Dispose();input?.Dispose(); connectionTimer.Stop(); tray?.Dispose();if(compact!=null){compact.AllowClose=true;compact.Close();} }
+            else {reservedKeys?.Configure(false,0);externalKeys.ReleaseAll();reservedKeys?.Dispose();sequences.Dispose();sounds.Dispose();input?.Dispose(); connectionTimer.Stop(); tray?.Dispose();if(compact!=null){compact.AllowClose=true;compact.Close();}}
         };
     }
     private void InitializeTray()
@@ -101,23 +108,27 @@ public partial class MainWindow : Window
     {
         try {
             var count=KeyboardDevice.Find().Count;
+            miniConnected=count==1;
             ConnectionText.Text=count==1?"●  Mini teclado conectado":count>1?"●  Mais de um mini teclado":"○  Teclado desconectado";
             ConnectionText.Foreground=Color(count==1?"#68DFC3":"#E7BA75");
             if(count!=1) {engine.ReleaseAll();compact?.ReleaseAll();}
             compact?.SetRuntimeStatus(ConnectionText.Text,config.BridgeEnabled,config.BridgePrepared);
-        } catch { ConnectionText.Text="○  Conexão indisponível"; }
+        }catch{miniConnected=false;ConnectionText.Text="○  Conexão indisponível";}
+        UpdateInputRouting();
     }
     private void RefreshBridge()
     {
         ActiveText.Text="Em uso: "+engine.Current.Name;
         BridgeTitle.Text=config.BridgeEnabled?"Camadas ativas · "+engine.Current.Name:config.BridgePrepared?"Ações pausadas":"Prepare o teclado uma única vez";
-        BridgeText.Text=config.BridgeEnabled?"As ações continuam funcionando ao minimizar. Feche pela bandeja para encerrar.":"O MiniDeck precisa ficar aberto para executar camadas e controles de áudio.";
+        BridgeText.Text=config.BridgeEnabled?(config.LayerHotkeysEnabled?"Atalhos exclusivos: teclas sem ação enviam a combinação da camada atual.":"Modo compartilhado: os F13–F24 originais também chegam aos outros programas."):"O MiniDeck precisa ficar aberto para executar camadas e controles de áudio.";
+        UpdateInputRouting();
         BridgeButton.Content=config.BridgeEnabled?"Pausar ações":config.BridgePrepared?"Retomar ações":"Ativar camadas";
         compact?.SetRuntimeStatus(ConnectionText.Text,config.BridgeEnabled,config.BridgePrepared);
         if(tray!=null) tray.Text=("MiniDeck · "+engine.Current.Name+(config.BridgeEnabled?" · ativo":" · pausado"))[..Math.Min(63,("MiniDeck · "+engine.Current.Name+(config.BridgeEnabled?" · ativo":" · pausado")).Length)];
     }
     private void RenderDeck()
     {
+        LayerHotkeys.EnsureBanks(config);
         LayerPanel.Children.Clear();
         foreach(var layer in config.Layers) {
             var b=new Button { Content=layer.Name, Background=Color(layer==engine.Current?"#294A48":"#1D293B"),BorderBrush=Color(layer==engine.Current?"#68DFC3":"#33445B"), Padding=new Thickness(13,9,13,9),ToolTip="Ativar e editar esta camada" };
@@ -143,8 +154,8 @@ public partial class MainWindow : Window
         var panel=new StackPanel();
         panel.Children.Add(new TextBlock {Text=knob?slot.Id%3==1?"↶  ESQUERDA":slot.Id%3==2?"●  PRESSIONAR":"↷  DIREITA":"TECLA "+slot.Id,FontSize=10,Foreground=Color("#91A4BE"),Margin=new Thickness(0,0,0,12)});
         panel.Children.Add(new TextBlock {Text=a.Name,FontSize=knob?12:14,FontWeight=FontWeights.SemiBold,TextWrapping=TextWrapping.Wrap,MaxHeight=58});
-        panel.Children.Add(new TextBlock {Text=ActionShort(a),FontSize=10,Foreground=Color("#8EB3BA"),Margin=new Thickness(0,9,0,0),TextTrimming=TextTrimming.CharacterEllipsis});
-        var b=new Button {Content=panel, MinHeight=knob?88:100,Padding=new Thickness(12),Background=Color(slot.Id==selectedSlot?"#243D46":"#1B293C"),BorderBrush=Color(slot.Id==selectedSlot?"#68DFC3":"#35465D"),ToolTip=slot.Name+" · "+slot.Trigger,HorizontalContentAlignment=HorizontalAlignment.Stretch};
+        panel.Children.Add(new TextBlock {Text=a.Kind=="none"?LayerHotkeys.Describe(config,engine.Current,slot.Id):ActionShort(a),FontSize=10,Foreground=Color("#8EB3BA"),Margin=new Thickness(0,9,0,0),TextTrimming=TextTrimming.CharacterEllipsis});
+        var b=new Button {Content=panel, MinHeight=knob?88:100,Padding=new Thickness(12),Background=Color(slot.Id==selectedSlot?"#243D46":"#1B293C"),BorderBrush=Color(slot.Id==selectedSlot?"#68DFC3":"#35465D"),ToolTip=slot.Name+" · "+LayerHotkeys.Describe(config,engine.Current,slot.Id),HorizontalContentAlignment=HorizontalAlignment.Stretch};
         b.Click+=(_,_)=>{selectedSlot=slot.Id;RenderDeck();LoadEditor();}; slotButtons[slot.Id]=b;return b;
     }
     private static string ActionShort(DeckAction a)=>ActionRules.Describe(a);
@@ -198,7 +209,7 @@ public partial class MainWindow : Window
     private async Task<bool> WithDevice(Func<KeyboardDevice,Task> task)
     {
         if(busy){SetStatus("Aguarde o envio atual ao teclado.");return false;}
-        busy=true; IsEnabled=false;engine.ReleaseAll();compact?.ReleaseAll();
+        busy=true;IsEnabled=false;engine.ReleaseAll();compact?.ReleaseAll();UpdateInputRouting();
         try {
             var devices=KeyboardDevice.Find();
             if(devices.Count!=1)throw new InvalidOperationException(devices.Count==0?"Conecte o mini teclado por USB.":"Há mais de um mini teclado. Conecte apenas o que deseja configurar.");
@@ -209,6 +220,7 @@ public partial class MainWindow : Window
     private async void BridgeClick(object sender,RoutedEventArgs e)
     {
         if(config.BridgeEnabled) {config.BridgeEnabled=false;engine.ReleaseAll();SaveLocal();RefreshBridge();SetStatus("Ações pausadas. Os comandos na memória do teclado foram mantidos.");return;}
+        if(config.LayerHotkeysEnabled&&reservedKeys?.Running!=true){SetStatus("Reabra o MiniDeck para iniciar o isolamento de atalhos, ou desmarque Atalhos exclusivos para usar o modo compartilhado.",true);return;}
         if(config.BridgePrepared){config.BridgeEnabled=true;SaveLocal();RefreshBridge();SetStatus("Ações retomadas.");return;}
         var slots=config.Slots().ToList();
         if(slots.Count>12){SetStatus("O modo de camadas aceita até 12 entradas: cada knob usa 3. Para 6 teclas, você pode usar até 2 knobs. A gravação direta aceita o layout completo.",true);return;}
@@ -258,6 +270,7 @@ public partial class MainWindow : Window
     private void BuildHelp()
     {
         void Section(string title,string text){HelpContent.Children.Add(new TextBlock{Text=title,FontSize=21,FontWeight=FontWeights.SemiBold,Margin=new Thickness(0,0,0,10)});HelpContent.Children.Add(new TextBlock{Text=text,Foreground=Color("#AABACE"),FontSize=14,LineHeight=24,Margin=new Thickness(0,0,0,27)});}
+        Section("Configurar direto no OBS ou em outro programa","Deixe Atalhos exclusivos por camada marcado. Selecione Sem ação na tecla e salve; cadastre no programa de destino a combinação mostrada acima do editor ou no painel compacto. Com seis teclas: primeira camada F13–F18, segunda F19–F24, terceira Ctrl+F13–F18, quarta Ctrl+F19–F24. Depois vêm combinações com Alt/Shift. O Windows não tem F25. São 96 combinações automáticas (16 bancos de seis teclas); camadas adicionais continuam aceitando as ações do MiniDeck. Os knobs usam as ações configuradas, sem atalho automático para Sem ação. Enquanto o modo está ativo e um mini teclado está conectado, os F13–F24 físicos usados pelo layout ficam reservados em todos os teclados. O sinal original não passa para o destino; uma ação configurada, como trocar camada, não envia um F junto. Ao pausar ou desmarcar o modo, o comportamento compartilhado anterior volta. Depois de atualizar, recadastre os atalhos nas outras aplicações: por exemplo, a tecla 5 na terceira camada passa a Ctrl+F17. Os bancos permanecem ao renomear ou excluir outras camadas.");
         Section("Colocar sons em uma camada","1. Clique em + Sons para criar uma camada pronta, ou use qualquer camada existente.\n2. Escolha uma tecla e a ação Sons · tocar arquivo MP3 / WAV.\n3. Clique em Escolher som e selecione seu arquivo. Escolha a saída de áudio, o volume e o que acontece quando apertar de novo.\n4. Clique em Salvar ação. Aperte a tecla física para tocar. Testar ação em 3 segundos também permite ouvir antes de salvar.\nNa camada criada por + Sons, a última tecla troca de camada. O knob diminui o volume dos sons, muta ao clicar e aumenta ao girar para a direita. O controle Sons na lateral ajusta o volume geral. Parar sons encerra todos, inclusive os que repetem; também fica disponível no painel compacto enquanto há som tocando.");
         Section("Fazer os sons aparecerem na gravação","No OBS, capture o áudio do MiniDeck ou a saída de áudio em que ele está tocando. Se já usa Voicemeeter ou um cabo virtual, escolha essa saída na configuração do som e capture-a no OBS. Escolher um arquivo não o copia: mantenha o MP3 ou WAV na mesma pasta. Cada som tem volume próprio, combinado com o volume geral dos sons. O MiniDeck não altera o volume do Windows para fazer esse ajuste. Trocar de camada não interrompe o som; use Parar sons quando quiser parar.");
         Section("Painel compacto para a segunda tela","Clique em Modo compacto para abrir o painel pequeno. Arraste pelo cabeçalho MINIDECK até a outra tela. O nome da camada, as seis teclas e as três ações do knob acompanham o teclado físico. A tecla apertada fica amarela enquanto estiver segurada e por 2 segundos depois de soltar. Uma bolinha, a borda amarela e o texto Última indicam a última entrada usada até você apertar outra, inclusive após trocar de camada. Esse destaque aparece na tela. Você pode redimensionar pelo canto inferior direito. Fixar mantém o painel por cima de outras janelas; Configurar volta ao editor. O tamanho e a posição ficam salvos.");
@@ -269,7 +282,7 @@ public partial class MainWindow : Window
         Section("O que cada entrada pode fazer","Teclas, giros e cliques dos knobs podem executar atalhos, digitar texto, abrir programas ou sites, controlar mídia, clicar ou rolar o mouse, mudar de camada e ajustar o áudio. O clique do knob e as teclas também podem manter uma camada ativa enquanto ficam pressionados.");
         Section("Áudio por aplicativo e microfone","Escolha o dispositivo de entrada ou saída pelo nome. Para ajustar um aplicativo, selecione seu processo na lista ou digite o nome sem .exe. A lista mostra aplicativos que têm uma sessão de áudio: reproduza algum som se não aparecer. O ajuste alcança as sessões desse processo nas saídas ativas. O microfone usa o volume de entrada do Windows, não filtros ou ganho interno do OBS ou do Voicemeeter.");
         Section("O que fica no teclado e o que fica no Windows","A gravação direta salva atalhos de até 5 passos, mídia ou mouse na memória do teclado. O protocolo oferece até 3 camadas nativas, mas o programa original só as seleciona para configuração; não foi encontrada uma ação física nativa para alterná-las. As camadas livres, áudio por aplicativo e controle do microfone são executados pelo MiniDeck. Minimize para manter as ações funcionando. Com as camadas ativas, fechar a janela envia o MiniDeck para a bandeja; para encerrar, use o menu do ícone.");
-        Section("Como as teclas chegam ao MiniDeck","O modo de camadas atribui F13 a F24 às entradas e identifica os eventos pelo dispositivo USB 1189:8890. Ele escuta apenas esse modelo. Até 12 entradas são aceitas nesse modo; um knob conta como 3 entradas. Aplicativos com atalhos F13–F24 próprios também podem reagir a essas teclas. Não é instalado driver, filtro de teclado nem serviço. Se houver dois dispositivos desse modelo, conecte somente o que deseja usar.");
+        Section("Como as teclas chegam ao MiniDeck","A preparação usa F13–F24 como gatilhos internos, até 12 entradas contando três por knob. No modo exclusivo, esses F físicos usados pelo layout ficam reservados em todos os teclados enquanto as camadas estão ativas; só o atalho externo da camada ou a ação escolhida é enviado. Desmarcar o modo exclusivo volta ao Raw Input filtrado pelo USB 1189:8890, deixando os gatilhos originais passar. Não é instalado driver ou serviço. Se houver dois dispositivos desse modelo, conecte somente o que deseja usar.");
         Section("LED: somente o que foi encontrado","O programa original tem modos 0, 1 e 2, sem nomes de efeitos. Não contém controle de cor RGB, brilho, velocidade ou luz individual. É necessário observar o teclado para confirmar se esta unidade tem LED e o que cada modo faz. A troca de camada do MiniDeck não muda automaticamente o LED.");
         Section("Nomes aceitos na gravação direta","A–Z, 0–9, F1–F24; Enter, Esc, Backspace, Tab, Space; CapsLock, PrintScreen, ScrollLock, Pause; Insert, Delete, Home, End, PageUp, PageDown, Left, Right, Up, Down.\nModificadores: Ctrl, Shift, Alt, Win, RCtrl, RShift, RAlt, RWin.\nNum0–Num9, NumLock, NumDivide, NumMultiply, NumSubtract, NumAdd, NumEnter, NumDecimal, Menu.\nPontuação por posição USB: Minus, Equal, LBracket, RBracket, Backslash, NonUSHash, Semicolon, Apostrophe, Grave, Comma, Period, Slash, NonUSBackslash. O caractere resultante depende do layout PT-BR configurado no Windows. Use ; para separar até 5 passos.");
         Section("Se uma tecla não funcionar","Confira o cabo USB, o layout escolhido e se Camadas ativas aparece no topo. Feche o programa original antes de gravar. Se outro programa tiver reconfigurado o teclado, ajuste o layout e prepare novamente. Atalhos enviados a programas executados como administrador podem ser bloqueados pelo Windows. Não é necessário usar administrador para o funcionamento normal.");

@@ -38,6 +38,8 @@ Reserve uma tecla com **Camadas · próxima**, **anterior** ou **ir para**. **En
 
 Há um limite de 100 camadas. A mudança de camada de software precisa do MiniDeck aberto.
 
+Para cadastrar a tecla diretamente em outro programa, deixe **Atalhos exclusivos por camada** marcado e escolha **Sem ação**. O editor mostra a combinação enviada: com seis teclas, primeira camada F13–F18, segunda F19–F24, terceira Ctrl+F13–F18. Cadastre essa nova combinação no programa; os atalhos antigos não são reconfigurados automaticamente. Leia os [limites e o passo a passo](ATALHOS-POR-CAMADA.md).
+
 ## 5. Deixe o painel na outra tela
 
 1. Clique em **Modo compacto**.

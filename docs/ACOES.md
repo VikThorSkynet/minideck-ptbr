@@ -4,7 +4,7 @@ Todas as ações abaixo podem ser atribuídas a uma entrada física. Um knob tem
 
 | ID no perfil | Nome na interface | Parâmetros / efeito |
 |---|---|---|
-| `none` | Sem ação | Entrada sem comando de software. |
+| `none` | Sem ação | No modo exclusivo, uma tecla envia o atalho do banco atual ao outro programa. Knobs ficam sem comando. No modo compartilhado, o gatilho físico original passa. |
 | `nextLayer` | Camadas · próxima | Próxima camada, com retorno circular. |
 | `previousLayer` | Camadas · anterior | Camada anterior, com retorno circular. |
 | `layer` | Camadas · ir para | `Target`: ID da camada. |

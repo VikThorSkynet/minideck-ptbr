@@ -13,6 +13,7 @@ internal static class Program
         if(args.Length>0&&args[0]=="--self-test") return SelfTests.Run(args.Length>1?args[1]:Path.Combine(AppContext.BaseDirectory,"testes.json"));
         if(args.Length>0&&args[0]=="--ui-smoke")return UiSmoke.Run(args.Length>1?args[1]:Path.Combine(AppContext.BaseDirectory,"verificacao-visual"));
         if(args.Length>0&&args[0]=="--sound-smoke")return SoundboardTests.RunPlayback(args.Length>1?args[1]:Path.Combine(AppContext.BaseDirectory,"verificacao-sons"));
+        if(args.Length>0&&args[0]=="--hook-smoke")return HotkeyTests.NativeSmoke(args.Length>1?args[1]:Path.Combine(AppContext.BaseDirectory,"verificacao-atalhos.json"));
         if(args.Length>0&&args[0]=="--diagnostico") {
             string path=args.Length>1?args[1]:Path.Combine(AppContext.BaseDirectory,"diagnostico.json");
             try { File.WriteAllText(path,JsonSerializer.Serialize(new { Device=KeyboardDevice.Inspect(), Audio=new AudioService().Snapshot(), Note="Somente leitura: nenhum comando foi gravado no teclado e nenhum volume foi alterado." },Catalog.Json));return 0; }

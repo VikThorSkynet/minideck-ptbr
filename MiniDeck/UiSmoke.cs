@@ -24,6 +24,14 @@ public static class UiSmoke
             compact.Left=40;compact.Top=40;compact.Topmost=false;compact.Show();compact.UpdateLayout();
             void Check(bool okay,string label){if(!okay)throw new Exception(label);checks.Add(label);}
             Check(compact.DisplayedLayer=="Principal","Nome da camada inicial no painel");
+            config.Layers[0].Actions[5]=new(){Name="Ditado",Kind="none"};compact.Refresh();compact.UpdateLayout();
+            Check(Texts(Buttons(compact).Single(b=>b.Name=="CompactKey5")).Any(t=>t.Text=="F17"),"Sem ação mostra F17 na primeira camada");
+            Check(Texts(Buttons(compact).Single(b=>b.Name=="CompactKey5")).Any(t=>t.Text=="Ditado"),"Nome personalizado continua visível junto do atalho externo");
+            engine.Select(config.Layers[1].Id);config.Layers[1].Actions[5]=new(){Kind="none"};compact.Refresh();compact.UpdateLayout();
+            Check(Texts(Buttons(compact).Single(b=>b.Name=="CompactKey5")).Any(t=>t.Text=="F23"),"Mesmo botão mostra F23 na segunda camada");
+            engine.Select(config.Layers[2].Id);config.Layers[2].Actions[5]=new(){Kind="none"};compact.Refresh();compact.UpdateLayout();
+            Check(Texts(Buttons(compact).Single(b=>b.Name=="CompactKey5")).Any(t=>t.Text=="Ctrl+F17"),"Terceira camada mostra combinação diferente sem inventar F25");
+            engine.Select(config.Layers[0].Id);
             compact.Pulse(2,true);Check(compact.IsHighlighted(2),"Tecla 2 acende ao pressionar");
             compact.Pulse(2,false);Check(compact.IsHighlighted(2),"Pulso curto permanece visível após soltar");
             Snapshot(compact,Path.Combine(folder,"compacto-principal.png"));

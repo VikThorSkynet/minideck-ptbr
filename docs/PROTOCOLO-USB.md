@@ -62,7 +62,9 @@ Não foram encontrados comandos para ler bindings atuais, obter o layout físico
 
 ## Camadas e áudio do novo aplicativo
 
-As entradas configuradas para o modo MiniDeck emitem F13–F24 (usos USB 104–115). O programa registra Raw Input com `RIDEV_INPUTSINK`, filtra `VID_1189&PID_8890` e despacha somente eventos desse modelo. Não instala driver nem bloqueia as teclas de outros dispositivos. Um aplicativo com atalhos próprios nessas teclas também pode reagir a elas.
+As entradas configuradas para o modo MiniDeck emitem F13–F24 (usos USB 104–115). A versão 1.3 separa esses gatilhos internos da saída externa. No modo exclusivo, um hook `WH_KEYBOARD_LL` reserva os F13–F24 físicos usados pelo layout e impede sua propagação normal; o evento é despachado para a camada, e somente uma tecla em Sem ação gera seu atalho externo. Eventos injetados não são reprocessados pelo hook. Esse caminho reserva a faixa em todos os teclados, pois a API não fornece identidade do dispositivo.
+
+O modo compartilhado anterior continua usando Raw Input com `RIDEV_INPUTSINK`, filtro `VID_1189&PID_8890` e propagação dos gatilhos originais. A preparação USB não muda ao alternar esses modos. Não é instalado driver ou firmware.
 
 Camadas de software e o controle por processo/dispositivo são recursos implementados no Windows, não capacidades atribuídas ao firmware. O MiniDeck precisa permanecer aberto. Áudio usa WASAPI/Core Audio via NAudio e identifica sessões pelo nome do processo.
 
@@ -71,6 +73,8 @@ O soundboard também é inteiramente de software: Media Foundation decodifica os
 ## Referências de implementação
 
 - [Documentação oficial de Raw Input do Windows](https://learn.microsoft.com/en-us/windows/win32/inputdev/about-raw-input).
+- [Hook de teclado do Windows e supressão](https://learn.microsoft.com/en-us/windows/win32/winmsg/lowlevelkeyboardproc).
+- [Flags para eventos injetados](https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-kbdllhookstruct).
 - [Código e documentação do NAudio](https://github.com/naudio/NAudio).
 - [HidSharp, projeto do autor](https://www.zer7.com/software/hidsharp). No Windows, seus descritores são reconstruídos a partir da API do sistema.
 - [Experimento independente com F13–F18 no modelo 1189:8890](https://github.com/devkev/hid-minikb-libusb). Corrobora a estratégia de teclas estendidas; não substitui a validação desta unidade.

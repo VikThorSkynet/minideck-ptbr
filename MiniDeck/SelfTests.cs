@@ -69,6 +69,7 @@ public static class SelfTests
         Test("Referência a camada inexistente é detectada também dentro de macros",()=>{var c=DeckConfig.Create();c.Layers[0].Actions[1]=new(){Kind="sequence",Steps=new(){new(){Kind="layer",Target="inexistente"}}};Throws(c.Validate);});
         Test("Destaque continua legível com cores claras, escuras ou vermelhas",()=>{Equal(Ui.InkFor("#FFFFFF"),"#000000");Equal(Ui.InkFor("#000000"),"#FFFFFF");Equal(Ui.InkFor("#FF0000"),"#000000");});
         SoundboardTests.Register(Test);
+        HotkeyTests.Register(Test);
         File.WriteAllText(path,JsonSerializer.Serialize(new { Passed=passed, Failed=failed, Tests=results, Note="Sem gravação USB, sem entrada simulada e sem alteração de áudio." },Catalog.Json));return failed==0?0:1;
     }
 }
