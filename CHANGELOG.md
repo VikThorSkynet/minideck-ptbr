@@ -1,5 +1,9 @@
 # Histórico de versões
 
+## Próxima versão
+
+- Atalhos, macros e combinações por camada enviados pelo MiniDeck agora levam o scan code físico da tecla. Aplicativos Chromium/Electron, como o Claude desktop, comparam `KeyboardEvent.code` e ignoravam atalhos como Ctrl+F12 enviados sem ele.
+
 ## 1.3.0
 
 - Atalhos exclusivos por camada para teclas configuradas como Sem ação.
